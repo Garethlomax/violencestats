@@ -83,7 +83,7 @@ df = pd.concat([df, pd.get_dummies(df['violence_category'], prefix = 'viol')], a
 # This still gives us nans
 # TODO: sort out what happens in first sequence
 # not giving proper time difference - lagged by one 
-df['time_diff'] = df.sort_values(["rel_time", 'id']).groupby(sorting_variable).rel_time.diff()
+df['time_diff'] = df.sort_values(["rel_time", 'id']).groupby(sorting_variable).rel_time.diff() #TODO: sort this - id may not be the right value
 df['time_diff'] = df.time_diff.fillna(0)
 def time_delay_zero(df):
     # origin = time.mktime((0.0,))
@@ -92,28 +92,28 @@ def time_delay_zero(df):
 df['time_diff_days'] = df.time_diff.apply(time_delay_zero)
 
 
-df[df.conflict_new_id == 644][['date_start', 'rel_time', 'time_diff_days']]
+# df[df.conflict_new_id == 644][['date_start', 'rel_time', 'time_diff_days']]
 
 
 
-#hdf5
-# group by event then prio with sort by time then id - save this as hdf5 then 
-#load custom way.
+# #hdf5
+# # group by event then prio with sort by time then id - save this as hdf5 then 
+# #load custom way.
         
-# finds lenght for each grid cell 
-df = df[['viol_1','viol_2',sorting_variable, 'event_count', 'id','side_a']]
+# # finds lenght for each grid cell 
+# df = df[['viol_1','viol_2',sorting_variable, 'event_count', 'id','side_a', 'side_b']]
 
-a = df.groupby(sorting_variable).agg({'event_count' : 'mean'})
+# # a = df.groupby(sorting_variable).agg({'event_count' : 'mean'})
 
-# b = VarLenDataset(df)
+# # # b = VarLenDataset(df)
 
-# c = VarLenDataloader(b, 100)
+# # # c = VarLenDataloader(b, 100)
 
-# j = 0
-# for d in c:
-#     if j ==2:
-#         break
-#     j += 1
+# # # j = 0
+# # # for d in c:
+# # #     if j ==2:
+# # #         break
+# # #     j += 1
     
     
 def array_dict_map(dictionary, keys):
@@ -138,14 +138,24 @@ def embedded_side_dict():
 dictionary = embedded_side_dict()
 
 def embed_df_col(df, column, dictionary):
-    """takes one column"""
+    """takes one column""" 
     new_df = array_dict_map(dictionary, df[column])
     
     return pd.DataFrame(new_df)
 
 new_df = embed_df_col(df, 'side_a', dictionary)
 
+def embed_sides(df):
+    dictionary = embedded_side_dict()
+    df.reset_index(drop=True, inplace=True)
+    df_a = embed_df_col(df, 'side_a', dictionary)
+    df_b = embed_df_col(df, 'side_b', dictionary)
+    df = df.drop(['side_a', 'side_b'], axis = 1)
+    combined_dfs = pd.concat([df_a, df_b, df], axis = 1)
+    return combined_dfs
 
+final_df = embed_sides(df)
+    
 
 
 
